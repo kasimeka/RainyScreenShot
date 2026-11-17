@@ -1,92 +1,76 @@
 package com.rainy.screenshot
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
+import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import com.rainy.screenshot.capture.ShellExecutor
-import com.rainy.screenshot.ui.RainyScreenShotNavHost
-import com.rainy.screenshot.ui.components.RainyBackground
-import com.rainy.screenshot.ui.theme.RainyScreenShotTheme
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
+import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import rikka.shizuku.Shizuku
 
-/**
- * APP 入口。
- *
- * 布局策略（对齐 RainyToken）：
- *  - 外层 RainyScreenShotTheme（品牌色）→ RainyBackground（樱粉渐变）→ NavHost
- *  - 每个页面自己处理 Scaffold 与 padding，避免双 Scaffold 嵌套
- *
- * 权限策略（阶段 3 增强）：
- *  - 启动即主动请求 Shizuku 授权（requestPermission），
- *    避免用户手动去 Shizuku 应用里操作。
- *  - 悬浮窗权限可通过 Shizuku shell 静默授予（appops set，见 ShellExecutor）。
- */
-@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
-    @Inject
-    lateinit var shellExecutor: ShellExecutor
+    private companion object {
+        const val REQUEST_SHIZUKU = 10001
+        const val PREFS = "permissions"
+        const val KEY_NOTIF_ASKED = "notification_asked"
+    }
 
-    private var shizukuPermissionListener: Shizuku.OnRequestPermissionResultListener? = null
+    private val notificationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
+    private val binderReceived = Shizuku.OnBinderReceivedListener { requestShizukuIfNeeded() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // 主动请求 Shizuku 授权：注册结果监听 + 若未授权则拉起请求。
-        // 仅首次创建时发起（savedInstanceState == null 排除旋转重建重复弹框，
-        // 审计记录 2：配置变更不应重复打扰）
-        if (savedInstanceState == null) {
-            registerShizukuPermissionRequest()
+        val padding = (16 * resources.displayMetrics.density).toInt()
+        val content = TextView(this).apply {
+            text = getString(R.string.main_text)
         }
+        ViewCompat.setOnApplyWindowInsetsListener(content) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(
+                padding + bars.left,
+                padding + bars.top,
+                padding + bars.right,
+                padding + bars.bottom
+            )
+            insets
+        }
+        setContentView(content)
 
-        enableEdgeToEdge()
-        setContent {
-            RainyScreenShotTheme {
-                RainyBackground {
-                    RainyScreenShotNavHost()
-                }
+        if (savedInstanceState == null) {
+
+            Shizuku.addBinderReceivedListenerSticky(binderReceived)
+            requestNotificationPermission()
+        }
+    }
+
+    override fun onDestroy() {
+        Shizuku.removeBinderReceivedListener(binderReceived)
+        super.onDestroy()
+    }
+
+    private fun requestShizukuIfNeeded() {
+        runCatching {
+            if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
+                Shizuku.requestPermission(REQUEST_SHIZUKU)
             }
         }
     }
 
-    /**
-     * 主动请求 Shizuku 授权。
-     *
-     * - Shizuku 已运行但本应用未授权 → 调用 requestPermission 拉起授权 UI。
-     * - Shizuku 未运行 / 未安装 → 静默跳过（首页 EnvGuideCard 会引导）。
-     */
-    private fun registerShizukuPermissionRequest() {
-        val running = shellExecutor.isSelectedBackendRunning()
-        if (!running) return
-
-        val granted = shellExecutor.isSelectedBackendGranted()
-        if (granted) return
-
-        // 注册结果监听（回调线程为主线程，安全更新 UI）
-        shizukuPermissionListener = Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
-            // 结果由首页 SettingInfo/EnvGuideCard 的 refresh() 在下次进入时反映；
-            // 此处不做 UI 强依赖，避免生命周期耦合
-            // 磁贴为纯手动添加（主页「任务栏磁贴」卡），授权成功不自动注入
-        }
-        Shizuku.addRequestPermissionResultListener(shizukuPermissionListener!!)
-
-        // 触发授权请求（授权对话框由 Shizuku 应用弹出）
-        // 卫生级修复：pingBinder 与 requestPermission 间 binder 消失的极小窗口
-        // 可抛 IllegalStateException（启动 crash），runCatching 兜底
-        runCatching { shellExecutor.requestPermission(REQUEST_SHIZUKU_PERMISSION) }
-    }
-
-    override fun onDestroy() {
-        shizukuPermissionListener?.let { Shizuku.removeRequestPermissionResultListener(it) }
-        shizukuPermissionListener = null
-        super.onDestroy()
-    }
-
-    companion object {
-        /** Shizuku 授权请求码 */
-        const val REQUEST_SHIZUKU_PERMISSION = 10001
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT < 33) return
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        ) return
+        val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+        if (prefs.getBoolean(KEY_NOTIF_ASKED, false)) return
+        prefs.edit().putBoolean(KEY_NOTIF_ASKED, true).apply()
+        notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 }

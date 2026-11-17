@@ -2,10 +2,6 @@ import java.io.File
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.hilt.android)
 }
 
 android {
@@ -16,8 +12,8 @@ android {
         applicationId = "com.rainy.screenshot"
         minSdk = 31
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.1.5"
+        versionCode = 7
+        versionName = "0.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -30,7 +26,7 @@ android {
         if (keystoreFile.exists()) {
             create("release") {
                 storeFile = keystoreFile
-                // 凭据必须通过环境变量注入；缺失或为空时直接报错，不提供任何隐式 fallback
+
                 storePassword = System.getenv("KEYSTORE_PASSWORD")
                     ?.takeIf { it.isNotBlank() }
                     ?: throw GradleException("KEYSTORE_PASSWORD env var not set or empty — cannot sign release")
@@ -42,7 +38,7 @@ android {
                     ?: throw GradleException("KEY_PASSWORD env var not set or empty — cannot sign release")
             }
         } else if (System.getenv("CI") != null) {
-            // 仅 CI 环境（release workflow 未注入 Secret 的 PR 构建等）fallback 到 debug keystore
+
             create("release") {
                 val debugKeystore = file("${System.getProperty("user.home")}/.android/debug.keystore")
                 storeFile = debugKeystore
@@ -51,9 +47,7 @@ android {
                 keyPassword = "android"
             }
         }
-        // 本地无 release.jks 且非 CI：不创建 release 签名配置，
-        // assembleRelease 产出 unsigned APK（诚实失败，绝不静默 debug 签名），
-        // assembleDebug 不受影响。
+
     }
 
     buildTypes {
@@ -62,7 +56,7 @@ android {
         }
         release {
             isMinifyEnabled = false
-            // 仅在 release.jks（或 CI fallback）存在时挂接签名
+
             signingConfig = signingConfigs.findByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -74,10 +68,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    buildFeatures {
-        compose = true
-        buildConfig = true
-    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -85,10 +75,6 @@ android {
     }
 }
 
-// ═══════════════════════════════════════════════════════
-// AGP 9.0 ARM64 Proot: Release resource guard + fallback
-//（与 RainyToken 相同的兼容方案，见其 app/build.gradle.kts）
-// ═══════════════════════════════════════════════════════
 if (System.getProperty("os.arch") == "aarch64") {
     tasks.register("guardReleaseResources") {
         dependsOn("optimizeReleaseResources")
@@ -149,7 +135,6 @@ if (System.getProperty("os.arch") == "aarch64") {
     }
 }
 
-// Force ARM64 AAPT2 in Proot environment (local only; GitHub Actions x86_64 uses default)
 if (System.getProperty("os.arch") == "aarch64") {
     configurations.all {
         resolutionStrategy.eachDependency {
@@ -161,47 +146,10 @@ if (System.getProperty("os.arch") == "aarch64") {
 }
 
 dependencies {
-
-    // Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.lifecycle.runtime.compose)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.appcompat)
-
-    // Compose
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    implementation(libs.androidx.material.icons.extended)
-
-    // Navigation
-    implementation(libs.androidx.navigation.compose)
-
-    // DataStore（设置持久化）
-    implementation(libs.androidx.datastore.preferences)
-
-    // Serialization
-    implementation(libs.kotlinx.serialization.json)
-
-    // Shizuku
-    implementation(libs.porter.shizuku.bridge)
+    implementation(libs.androidx.activity)
+    implementation(libs.shizuku.api)
     implementation(libs.shizuku.provider)
-
-    // DI (Hilt + KSP)
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
-    implementation(libs.androidx.hilt.navigation.compose)
-
-    // Test
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 }

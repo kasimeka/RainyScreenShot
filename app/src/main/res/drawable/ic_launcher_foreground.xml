@@ -1,49 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 雨晴截屏 前景 · 草莓粉对焦取景框 + 中心镜头圆点（配色对齐 RainyToken 家族：浅粉画布 + 草莓粉主角） -->
+
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-
-    <!--
-        设计：家族浅粉画布 + 草莓粉主角（对应 RainyToken 水滴的角色）。
-        几何对齐悬浮球（启动图标 = 悬浮球本球，half/arm/圆点半径为球面同比例）：
-        · 取景框半边长 half = 21.6（球面 0.21 比例微收 ~5%：保证对角绘制半径合规，见末行）
-        · corner = 54 ± 21.6 → 32.4 / 75.6
-        · L 线臂长 arm = 0.75 × half → 16.2（臂端 32.4+16.2=48.6 / 75.6−16.2=59.4）
-        · 笔宽 4.6 / 圆点半径 9.2（0.085 × 图标宽）；圆头端点同球面 ROUND cap
-        · 安全区为 66dp 直径圆（半径 33）：对角最远 21.6×√2 + 半笔宽 2.3 ≈ 32.9 < 33，任意遮罩不裁切
-    -->
-
-    <!-- 四角 L 线 · 草莓粉 #FF85A2（StrawberryPink 家族主色）· 圆头端点 -->
-    <path
-        android:pathData="M32.4,48.6 L32.4,32.4 L48.6,32.4"
-        android:strokeColor="#FF85A2"
-        android:strokeWidth="4.6"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round" />
-    <path
-        android:pathData="M59.4,32.4 L75.6,32.4 L75.6,48.6"
-        android:strokeColor="#FF85A2"
-        android:strokeWidth="4.6"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round" />
-    <path
-        android:pathData="M32.4,59.4 L32.4,75.6 L48.6,75.6"
-        android:strokeColor="#FF85A2"
-        android:strokeWidth="4.6"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round" />
-    <path
-        android:pathData="M59.4,75.6 L75.6,75.6 L75.6,59.4"
-        android:strokeColor="#FF85A2"
-        android:strokeWidth="4.6"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round" />
-
-    <!-- 中心镜头圆点 · 草莓粉 #FF85A2 · 半径 9.2 -->
-    <path
-        android:pathData="M54,54m-9.2,0a9.2,9.2 0,1 1,18.4 0a9.2,9.2 0,1 1,-18.4 0"
-        android:fillColor="#FF85A2" />
+    <group
+        android:scaleX="2.5"
+        android:scaleY="2.5"
+        android:translateX="24"
+        android:translateY="24">
+        <path
+            android:fillColor="#FF424242"
+            android:pathData="M3,3H9V5H5V9H3Z M21,3H15V5H19V9H21Z M3,21H9V19H5V15H3Z M21,21H15V19H19V15H21Z M8,8H16V16H8Z" />
+    </group>
 </vector>

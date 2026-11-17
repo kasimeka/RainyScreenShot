@@ -40,6 +40,7 @@ androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecyc
 androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycleRuntimeKtx" }
 androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleRuntimeKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activityCompose" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 
 # Compose BOM
@@ -62,6 +63,7 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 # Shizuku
 porter-shizuku-bridge = { group = "com.github.d4rken-org.porter-api", name = "shizuku-bridge", version.ref = "porterApi" }
 shizuku-provider = { group = "dev.rikka.shizuku", name = "provider", version.ref = "shizukuApi" }
+shizuku-api = { group = "dev.rikka.shizuku", name = "api", version.ref = "shizukuApi" }
 
 # DI
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
